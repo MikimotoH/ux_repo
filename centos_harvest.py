@@ -84,7 +84,7 @@ def main():
             if not l:
                 continue
             repos += [l]
-    for repo in repos[5:]:
+    for repo in repos:
         print('repo=', repo)
         repo = repo.split('$', 1)[0]
         if repo in visited_repos:
