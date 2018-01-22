@@ -21,19 +21,23 @@ def recursion(url):
             time.sleep(0.1)
 
     try:
-        items = d('table tr td a')
+        items = d('a')
     except Exception as ex:
         print(ex)
         print('no CSS selector in pyquery d')
         return
-    for item in items[1:]:
-        if not item.text:
+    start = False
+    for item in items:
+        if item.text == 'Parent Directory' or item.text == '../':
+            start = True
+            continue
+        if not start:
             continue
         item_url = d.base_url + item.attrib['href']
-        if not item_url.endswith('.deb'):
-            yield from recursion(item_url)
-        else:
+        if item_url.endswith('.deb'):
             yield item_url
+        elif item_url.endswith('/'):
+            yield from recursion(item_url)
 
 
 dl_dir = 'downloads'
