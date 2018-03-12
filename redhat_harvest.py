@@ -7,13 +7,15 @@ import ftputil
 from ftputil import FTPHost
 from retrying import retry
 from os.path import join
+import concurrent.futures
 
 
 dl_dir = 'downloads'
 
 
 def retry_if_ftp_error(ex):
-    return isinstance(ex, ftputil.error.FTPOSError)
+    return isinstance(ex, ftputil.error.FTPOSError) or \
+        isinstance(ex, ConnectionResetError)
 
 
 @retry(retry_on_exception=retry_if_ftp_error)
@@ -22,20 +24,26 @@ def upload_file(fname):
     remote_fname = os.path.basename(fname)
     with FTPHost(ftpurl, ftpid, ftppw, timeout=20) as host:
         host.upload(fname, remote_fname)
+    try:
+        os.remove(fname)
+    except:
+        pass
 
 
 @retry(retry_on_exception=retry_if_ftp_error)
 def crawl_ftp(repo):
     file_count = 0
     hostname = urlsplit(repo).hostname
-    with FTPHost(hostname, 'anonymous', 'john@gmail.com', timeout=20) as host:
-        pardir = urlsplit(repo).path.split('$', 1)[0]
-        host.chdir(pardir)
-        dirs = host.listdir('.')
+    host = FTPHost(hostname, 'anonymous', 'john@gmail.com', timeout=20)
+    host.keep_alive()
+    pardir = urlsplit(repo).path.split('$', 1)[0]
+    host.chdir(pardir)
+    dirs = host.listdir('.')
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         for dir in dirs:
             if not re.match(r'\d+(\.\d+)*\w*', dir):
                 continue
-            host.chdir(dir)
+            host.chdir(host.path.join(pardir, dir))
             subdir = repo.split('$', 1)[1].split('/', 1)[1].strip('/')
             try:
                 host.chdir(subdir)
@@ -57,13 +65,25 @@ def crawl_ftp(repo):
                         file_count += 1
                         print('%d, download' % file_count, remo_url)
                         local_f = join(dl_dir, os.path.basename(f))
-                        host.download(join(root, f), local_f)
+                        for attempt in range(1000):
+                            try:
+                                host.download(join(root, f), local_f)
+                                break
+                            except OSError:
+                                host = FTPHost(hostname, 'anonymous', 'john@gmail.com', timeout=20) # noqa
+                                pass
+                            except Exception as ex:
+                                import traceback
+                                traceback.print_stack()
+                                import pdb
+                                pdb.set_trace()
+                                print(ex)
+                                try:
+                                    os.remove(local_f)
+                                except:
+                                    pass
                     print('%d, upload' % file_count, local_f)
-                    upload_file(local_f)
-                    try:
-                        os.remove(local_f)
-                    except:
-                        pass
+                    executor.submit(upload_file, local_f)
 
 
 def main():
