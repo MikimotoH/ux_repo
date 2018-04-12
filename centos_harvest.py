@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf8 -*-
-from pyquery import PyQuery as pq
 import re
 import os
 import urllib
-import sys
+from pyquery import PyQuery as pq
+from boto3x import upload_file
 
 
 def repo_to_regex(repo):
@@ -59,20 +59,6 @@ def download_file(file_url):
     with open(fname, mode='wb') as f:
         shutil.copyfileobj(r.raw, f)
     return fname
-
-
-def upload_file(fname):
-    import ftputil
-    from ftp_credentials import ftpurl, ftpid, ftppw
-    remote_fname = os.path.basename(fname)
-    for retry_count in range(5):
-        try:
-            with ftputil.FTPHost(ftpurl, ftpid, ftppw, timeout=20) as host:
-                host.upload(fname, remote_fname)
-                return
-        except ftputil.error.FTPOSError:
-            print('retry %d' % retry_count, fname)
-    print('Failed to upload ', fname, file=sys.stderr)
 
 
 def main():
