@@ -32,7 +32,7 @@ def upload_file(f_url, local_f, contentType, lastModified):
 
     msg = OrderedDict([
         ('bucket', bucketName), ('key', key), ('sha1', sha1.hexdigest()),
-        ('md5', md5.hexdigest()), ('sha256', sha256.hexdigest()), ('priority', 1),
+        ('md5', md5.hexdigest()), ('sha256', sha256.hexdigest()), ('priority', 5),
         ('source', f_url), ('contentTag', contentTag), ('lastModified', lastModified),
         ('filename', os.path.basename(local_f)),
         ("sourceCategory", "InternalPartner/GRID-UX"),
@@ -43,4 +43,3 @@ def upload_file(f_url, local_f, contentType, lastModified):
         QueueName='harvest_gridux',
         QueueOwnerAWSAccountId="934030439160")
     queue.send_message(MessageBody=json.dumps(msg))
-
