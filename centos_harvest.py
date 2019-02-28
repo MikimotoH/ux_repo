@@ -18,6 +18,7 @@ def repo_to_regex(repo):
 
 
 def recursion(url):
+    import time
     for try_count in range(100):
         try:
             d = pq(url=url)
@@ -28,7 +29,6 @@ def recursion(url):
                 print(ex)
                 print('Failed to visit ', url)
                 return
-            import time
             time.sleep(0.1)
 
     try:
@@ -50,20 +50,38 @@ def recursion(url):
 dl_dir = 'downloads'
 
 
-def download_file(file_url):
+def download_file(f_url):
     import requests
     import shutil
-    fname = os.path.basename(urllib.parse.urlparse(file_url).path)
-    fname = os.path.join(dl_dir, fname)
-    r = requests.get(file_url, stream=True)
-    with open(fname, mode='wb') as f:
-        shutil.copyfileobj(r.raw, f)
-    return fname
+    from os.path import basename, join
+    local_f = join(dl_dir, basename(urllib.parse.urlparse(f_url).path))
+    for _try in range(60):
+        try:
+            r = requests.get(f_url, stream=True, timeout=60)
+            lastModified = r.headers['Last-Modified']
+            contentType = r.headers['Content-Type']
+            with open(local_f, mode='wb') as f:
+                shutil.copyfileobj(r.raw, f)
+            try:
+                print('upload', basename(local_f))
+                upload_file(f_url, local_f, contentType, lastModified)
+            except Exception as ex:
+                print('upload "%s" failed %s' % (local_f, ex))
+            try:
+                os.remove(local_f)
+            except:
+                pass
+            return
+        except:
+            pass
+    print('download failed: ', f_url)
 
 
 def main():
     visited_repos = []
     repos = []
+    os.makedirs(dl_dir, exist_ok=True)
+
     with open('list of repositories.csv', 'r') as f:
         for l in f:
             l = l.strip()
@@ -79,26 +97,14 @@ def main():
         with open('centos_items.txt', 'w') as f:
             reporegexs = [_ for _ in repos if _.startswith(repo)]
             reporegexs = [repo_to_regex(_) for _ in reporegexs]
-            for c_url in recursion(repo):
-                if any(re.match(_, c_url) for _ in reporegexs):
-                    f.write(c_url + '\n')
+            for f_url in recursion(repo):
+                if any(re.match(_, f_url) for _ in reporegexs):
+                    f.write(f_url + '\n')
+                    print('download ', f_url)
+                    download_file(f_url)
         # download per centos_items.txt
-        os.makedirs(dl_dir, exist_ok=True)
-        with open('centos_items.txt', 'r') as f:
-            for line_num, l in enumerate(f):
-                f_url = l.strip()
-                print('%d download ' % line_num, f_url)
-                try:
-                    fname = download_file(f_url)
-                except Exception as ex:
-                    print(ex)
-                else:
-                    print('upload', fname)
-                    upload_file(fname)
-                    try:
-                        os.remove(fname)
-                    except:
-                        pass
+        # with open('centos_items.txt', 'r') as f:
+        #     for line_num, l in enumerate(f):
 
 
 if __name__ == '__main__':
