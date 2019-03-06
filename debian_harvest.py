@@ -44,32 +44,38 @@ dl_dir = 'downloads'
 harvest_url = 'http://ftp.us.debian.org/debian/pool/'
 
 
-def download_file(file_url):
+def download_file(f_url):
     import requests
     import shutil
-    fname = os.path.basename(urllib.parse.urlparse(file_url).path)
-    fname = os.path.join(dl_dir, fname)
-    r = requests.get(file_url, stream=True)
-    with open(fname, mode='wb') as f:
-        shutil.copyfileobj(r.raw, f)
-    return fname
+    from os.path import basename, join
+    local_f = join(dl_dir, basename(urllib.parse.urlparse(f_url).path))
+    for _try in range(60):
+        try:
+            r = requests.get(f_url, stream=True, timeout=60)
+            lastModified = r.headers['Last-Modified']
+            contentType = r.headers['Content-Type']
+            with open(local_f, mode='wb') as f:
+                shutil.copyfileobj(r.raw, f)
+            try:
+                print('upload', basename(local_f))
+                upload_file(f_url, local_f, contentType, lastModified)
+            except Exception as ex:
+                print('upload "%s" failed %s' % (local_f, ex))
+            try:
+                os.remove(local_f)
+            except:
+                pass
+            return
+        except:
+            pass
+    print('download failed: ', f_url)
 
 
 def main():
     os.makedirs(dl_dir, exist_ok=True)
     for line_num, f_url in enumerate(recursion(harvest_url)):
         print('%d download ' % line_num, f_url)
-        try:
-            fname = download_file(f_url)
-        except Exception as ex:
-            print(ex)
-        else:
-            print('upload', fname)
-            upload_file(fname)
-            try:
-                os.remove(fname)
-            except:
-                pass
+        download_file(f_url)
 
 
 if __name__ == '__main__':
