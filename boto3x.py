@@ -8,7 +8,7 @@ from collections import OrderedDict
 import boto3
 
 
-bucketName = 'grid-harvest-uploads'
+bucketName = 'grid-linux-harvest'
 
 
 def upload_file(f_url, local_f, contentType, lastModified):
@@ -40,6 +40,6 @@ def upload_file(f_url, local_f, contentType, lastModified):
 
     sqs = boto3.resource('sqs')
     queue = sqs.get_queue_by_name(
-        QueueName='harvest_gridux',
-        QueueOwnerAWSAccountId="934030439160")
+        QueueName='grid_linux_harvest',
+        QueueOwnerAWSAccountId='745063655428')
     queue.send_message(MessageBody=json.dumps(msg))
