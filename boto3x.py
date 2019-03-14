@@ -12,7 +12,7 @@ import boto3
 def upload_file(f_url, local_f, contentType, lastModified):
     production_phase = False
     if production_phase == True:
-        bucketName = 'grid-linux-bucket'
+        bucketName = 'grid-linux-harvest'
         aws_service_type = 'sqs'
         sqs_url='https://sqs.us-west-2.amazonaws.com/745063655428/grid_linux_harvest'
     else:
@@ -35,7 +35,7 @@ def upload_file(f_url, local_f, contentType, lastModified):
     key = sha256.hexdigest()
     key = key[:2] + '/' + key[2:5] + '/' + key[5:8] + '/' + key
     contentTag = contentType
-    bucket = boto3.resource('s3', region_name='us-west-2').Bucket(bucketName)
+    bucket = boto3.resource('s3', region_name='us-east-1').Bucket(bucketName)
     bucket.upload_file(local_f, key)
 
     msg = OrderedDict([
