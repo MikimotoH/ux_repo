@@ -8,10 +8,18 @@ from collections import OrderedDict
 import boto3
 
 
-bucketName = 'grid-linux-harvest'
-
 
 def upload_file(f_url, local_f, contentType, lastModified):
+    production_phase = False
+    if production_phase == True:
+        bucketName = 'grid-linux-bucket'
+        aws_service_type = 'sqs'
+        sqs_url='https://sqs.us-west-2.amazonaws.com/745063655428/grid_linux_harvest'
+    else:
+        bucketName = 'grid-staging-linux'
+        aws_service_type = 'sns'
+        topicArn = 'arn:aws:sns:us-east-1:934030439160:grid_ux_harvest_staging'
+
     md5 = hashlib.md5()
     sha1 = hashlib.sha1()
     sha256 = hashlib.sha256()
@@ -27,7 +35,7 @@ def upload_file(f_url, local_f, contentType, lastModified):
     key = sha256.hexdigest()
     key = key[:2] + '/' + key[2:5] + '/' + key[5:8] + '/' + key
     contentTag = contentType
-    bucket = boto3.resource('s3').Bucket(bucketName)
+    bucket = boto3.resource('s3', region_name='us-west-2').Bucket(bucketName)
     bucket.upload_file(local_f, key)
 
     msg = OrderedDict([
@@ -38,8 +46,16 @@ def upload_file(f_url, local_f, contentType, lastModified):
         ("sourceCategory", "InternalPartner/GRID-UX"),
         ('jobRegistryId', 'na')])
 
-    sqs = boto3.resource('sqs')
-    queue = sqs.get_queue_by_name(
-        QueueName='grid_linux_harvest',
-        QueueOwnerAWSAccountId='745063655428')
-    queue.send_message(MessageBody=json.dumps(msg))
+    response = None
+    if aws_service_type == 'sns':
+        client = boto3.client('sns', region_name='us-east-1')
+        response = client.publish(TopicArn='arn:aws:sns:us-east-1:934030439160:grid_ux_harvest_staging', Message=json.dumps(msg))
+    else:
+        client = boto3.client('sqs', region_name='us-west-2')
+        response = client.send_message(QueueUrl='https://sqs.us-west-2.amazonaws.com/745063655428/grid_linux_harvest', MessageBody=json.dumps(msg))
+    response_code = response['ResponseMetadata']['HTTPStatusCode']
+    if response_code == 200:
+        return True
+    else:
+        print('Upload failed, reponse = %s' % response)
+        return False
