@@ -10,9 +10,9 @@ import boto3
 
 
 def upload_file(f_url, local_f, contentType, lastModified):
-    production_phase = False
+    production_phase = True
     if production_phase == True:
-        bucketName = 'grid-linux-bucket'
+        bucketName = 'grid-linux-harvest'
         aws_service_type = 'sqs'
         sqs_url='https://sqs.us-west-2.amazonaws.com/745063655428/grid_linux_harvest'
     else:
