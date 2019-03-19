@@ -11,13 +11,11 @@ import boto3
 
 def upload_file(f_url, local_f, contentType, lastModified):
     from config import production_phase
-    if production_phase == True:
+    if production_phase:
         bucketName = 'grid-linux-harvest'
-        aws_service_type = 'sqs'
         sqs_url='https://sqs.us-west-2.amazonaws.com/745063655428/grid_linux_harvest'
     else:
         bucketName = 'grid-staging-linux'
-        aws_service_type = 'sns'
         topicArn = 'arn:aws:sns:us-east-1:934030439160:grid_ux_harvest_staging'
 
     md5 = hashlib.md5()
@@ -47,15 +45,14 @@ def upload_file(f_url, local_f, contentType, lastModified):
         ('jobRegistryId', 'na')])
 
     response = None
-    if aws_service_type == 'sns':
-        client = boto3.client('sns', region_name='us-east-1')
-        response = client.publish(TopicArn='arn:aws:sns:us-east-1:934030439160:grid_ux_harvest_staging', Message=json.dumps(msg))
-    else:
+    if production_phase:
         client = boto3.client('sqs', region_name='us-west-2')
-        response = client.send_message(QueueUrl='https://sqs.us-west-2.amazonaws.com/745063655428/grid_linux_harvest', MessageBody=json.dumps(msg))
+        response = client.send_message(QueueUrl=sqs_url, MessageBody=json.dumps(msg))
+    else:
+        client = boto3.client('sns', region_name='us-east-1')
+        response = client.publish(TopicArn=topicArn, Message=json.dumps(msg))
     response_code = response['ResponseMetadata']['HTTPStatusCode']
     if response_code == 200:
-        return True
+        pass
     else:
         print('Upload failed, reponse = %s' % response)
-        return False
