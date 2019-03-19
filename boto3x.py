@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # coding: utf-8
 import os
-# import re
 import json
+import logging
+import pprint
+from pprint import pformat
 import hashlib
 from collections import OrderedDict
 import boto3
 
+
+logger = logging.getLogger(__name__)
 
 
 def upload_file(f_url, local_f, contentType, lastModified):
@@ -55,4 +59,4 @@ def upload_file(f_url, local_f, contentType, lastModified):
     if response_code == 200:
         pass
     else:
-        print('Upload failed, reponse = %s' % response)
+        logger.warning('Upload failed, response= %s' % pformat(response))

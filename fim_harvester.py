@@ -3,8 +3,14 @@
 import re
 import os
 import urllib
+import logging
+import sys
+from pprint import pformat
 from pyquery import PyQuery as pq
 from boto3x import upload_file
+
+
+logger = logging.getLogger(__name__)
 
 
 def repo_to_regex(repo: str) -> str:
@@ -24,18 +30,18 @@ def recursion(url: str) -> str:
             d = pq(url=url)
             break
         except Exception as ex:
-            print('try_count=', try_count, ' for url=', url)
+            logger.info('try_count=%s, for url=%s' % (try_count, url))
             if try_count == 99:
-                print(ex)
-                print('Failed to visit ', url)
+                logger.warning(ex)
+                logger.warning('Failed to visit %s' % url)
                 return
             time.sleep(0.1)
 
     try:
         items = d('table:nth-child(6) tr td a')
     except Exception as ex:
-        print(ex)
-        print('no CSS selector in pyquery d')
+        logger.warning(pformat(ex))
+        logger.warning('no CSS selector in pyquery d')
         return
     for item in items[1:]:
         if not item.text:
@@ -63,10 +69,10 @@ def download_file(f_url: str):
             with open(local_f, mode='wb') as f:
                 shutil.copyfileobj(r.raw, f)
             try:
-                print('upload', basename(local_f))
+                logger.info('upload %s' % basename(local_f))
                 upload_file(f_url, local_f, contentType, lastModified)
             except Exception as ex:
-                print('upload "%s" failed %s' % (local_f, ex))
+                logger.warning('upload "%s" failed %s' % (local_f, pformat(ex)))
             try:
                 os.remove(local_f)
             except:
@@ -74,7 +80,7 @@ def download_file(f_url: str):
             return
         except:
             pass
-    print('download failed: ', f_url)
+    logger.warning('download failed: %s' % f_url)
 
 
 visited_repos = []
@@ -88,7 +94,7 @@ def harvest_csv_file(csv_file: str):
             if not l or not re.match(r'http://|http://', l):
                 continue
             repo = l
-            print('repo=', repo)
+            logger.info('repo=%s' % repo)
             reporegex = repo_to_regex(repo)
             repo = repo.split('$', 1)[0]
             global visited_repos
@@ -97,11 +103,13 @@ def harvest_csv_file(csv_file: str):
             visited_repos += [repo]
             for f_url in recursion(repo):
                 if re.match(reporegex, f_url):
-                    print('download ', f_url)
+                    logger.info('download %s' % f_url)
                     download_file(f_url)
 
 
 def main():
+    logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s %(message)s",
+            stream=sys.stdout, level=logging.INFO)
     os.makedirs(dl_dir, exist_ok=True)
     harvest_csv_file('fim_linux_repository.csv')
     harvest_csv_file('list of repositories.csv')
