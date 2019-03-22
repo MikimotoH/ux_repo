@@ -3,7 +3,8 @@
 ## Description
 The file unpack_archive.py is the core to extract archive files.
 
-The file sqs_consume_publish.py is the engine to consume msg in the SQS input queue, 
+The file sqs_consume_publish.py is the engine to consume msg in the SQS input
+queue, and upload extracted children files to the bucket/_extracted folder.
 
 ## System Requirements
   + Ubuntu 14.04
