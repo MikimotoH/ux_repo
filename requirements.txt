@@ -1,0 +1,3 @@
+python-magic
+boto3
+humanfriendly
