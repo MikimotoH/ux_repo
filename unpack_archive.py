@@ -6,7 +6,7 @@ import zipfile
 import tempfile
 import subprocess
 from subprocess import DEVNULL
-from os.path import basename, dirname, splitext, join as pjoin, islink, isdir
+from os.path import basename, splitext, join as pjoin, islink, isdir
 
 logger = logging.getLogger(__name__)
 
@@ -50,24 +50,52 @@ def copy_without_symlink(srcdir: str, dstdir: str):
                           shell=True, stdout=DEVNULL, stderr=subprocess.STDOUT, cwd=srcdir)
 
 
+def check_call(cmd, cwd=None):
+    if type(cmd) is list:
+        subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
+    else:
+        subprocess.check_call(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
+
+
 def unpack_archive(arcname: str, outdir: str):
     """
-
+    decompress Linux Archive file
     :param arcname: archive file path in absolute path
     :param outdir: output directory in absolute path
     :rtype: Iterator[:str:`str`, :class:`str`]
     """
     assert os.path.exists(outdir) and os.path.isdir(outdir)
     ftype = detect_filetype(arcname)
-
-    workdir = dirname(outdir)
     already_yielded = False
 
-    def check_call(cmd, cwd=None):
-        if type(cmd) is list:
-            subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
-        else:
-            subprocess.check_call(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
+    if re.search(r'gzip compressed data,.+".+?\.iso"', ftype):
+        pass
+    elif ftype.strip().startswith('RPM '):
+        pass
+    elif 'Debian binary package' in ftype:
+        pass
+    elif 'bzip2' in ftype:
+        pass
+    elif 'XZ compressed' in ftype:
+        pass
+    elif 'ARJ archive data' in ftype:
+        pass
+    elif 'rzip compressed' in ftype:
+        pass
+    elif 'lzop compressed' in ftype:
+        pass
+    elif 'lzip compressed' in ftype:
+        pass
+    elif 'gzip compressed data' in ftype:
+        pass
+    elif 'POSIX tar' in ftype:
+        pass
+    elif 'Zip' in ftype:
+        pass
+    elif 'Jar' in ftype:
+        pass
+    else:
+        raise NotSupportedFileType('ftype')
 
     with tempfile.TemporaryDirectory(suffix=".dir") as tmpdir:
         def gunzip_like_proc(fext: str, cmd: list):
@@ -96,6 +124,7 @@ def unpack_archive(arcname: str, outdir: str):
             check_call("7z x -o'%s' '%s'" % (tmpdir, splitext(tmpfile)[0]))
             os.remove(splitext(tmpfile)[0])
             copy_without_symlink(tmpdir, outdir)
+
         elif ftype.strip().startswith('RPM '):
             check_call("rpm2cpio '%(arcname)s' | cpio -idmv" % locals(), tmpdir)
             copy_without_symlink(tmpdir, outdir)
@@ -187,14 +216,10 @@ def unpack_archive(arcname: str, outdir: str):
             copy_without_symlink(tmpdir, outdir)
         elif 'Jar' in ftype:
             shutil.copy(arcname, pjoin(outdir, basename(arcname) + '.jar'))
-        else:
-            raise NotSupportedFileType(ftype)
 
     if not already_yielded:
         for root, _, files in os.walk(outdir):
             for f in files:
                 fpath = pjoin(root, f)
                 if not isdir(fpath) and not islink(fpath):
-                    yield os.path.relpath(fpath, outdir), \
-                          get_sha1(fpath)
-    already_yielded = True
+                    yield os.path.relpath(fpath, outdir), get_sha1(fpath)
