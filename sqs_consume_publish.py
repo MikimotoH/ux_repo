@@ -7,12 +7,14 @@ import logging
 import traceback
 import shutil
 import subprocess
+import pwd
+import grp
 from pprint import pformat
 import boto3
 from botocore.exceptions import ClientError
 import humanfriendly
 from tqdm import tqdm
-from unpack_archive import NotSupportedFileType, unpack_archive
+from unpack_archive import NotSupportedFileType, unpack_archive, chown_to_me
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +120,7 @@ def main():
                     s3_obj = s3.Bucket(bucket).Object(key)
                     fileSize = s3_obj.content_length
                     logger.info('download size=%s s3://%s/%s' % (humanfriendly.format_size(fileSize), bucket, key))
-                    with tqdm(total=fileSize, ncols=100) as t:
+                    with tqdm(total=fileSize, ncols=100, leave=False) as t:
                         s3_obj.download_file(local_file, Callback=hook(t))
                 except ClientError as e:
                     if e.response['Error']['Code'] == "404":
@@ -135,7 +137,8 @@ def main():
                     children = [pjoin(ext_dir, f) for f, _ in unpack_archive(abspath(local_file), abspath(ext_dir))]
                 except NotSupportedFileType:
                     logger.warning('NotSupportedFileType: %s' % local_file)
-                    shutil.rmtree(ext_dir, ignore_errors=True)
+                    chown_to_me(ext_dir)
+                    shutil.rmtree(ext_dir)
                     continue
                 os.remove(local_file)
 
@@ -159,14 +162,14 @@ def main():
                             try:
                                 logger.debug('upload child "%s" to s3://%s/%s"' % (f, bucket, child_key))
                                 fileSize = os.path.getsize(f)
-                                s3.Bucket(bucket).upload_file(f, child_key)
+                                s3.Bucket(bucket).upload_file(f, child_key, Callback=hook(t))
                             except ClientError as e:
                                 logger.warning('Failed to upload(%s, %s) %s' % (f, child_key, pformat(e)))
-                            t.update(fileSize)
                 except Exception as e:
                     logger.warning(pformat(e))
                     traceback.print_exc()
-                shutil.rmtree(ext_dir, ignore_errors=True)
+                chown_to_me(ext_dir)
+                shutil.rmtree(ext_dir)
 
             step = 'end'
         except (KeyboardInterrupt, Exception) as e:

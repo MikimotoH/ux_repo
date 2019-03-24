@@ -45,7 +45,16 @@ def detect_filetype(filepath: str) -> str:
     return desc
 
 
+def chown_to_me(pathdir: str):
+    import pwd, grp, os, subprocess
+    subprocess.check_call('chown -R %s:%s %s' % 
+            (grp.getgrgid(os.getgid())[0], pwd.getpwuid(os.getuid())[0], pathdir),
+            shell=True)  
+
+
 def copy_without_symlink(srcdir: str, dstdir: str):
+    chown_to_me(srcdir)
+    subprocess.check_call('chmod a+r -R %s' % srcdir, shell=True)
     subprocess.check_call("find . -type f | cpio -pamVd %(dstdir)s" % locals(),
                           shell=True, stdout=DEVNULL, stderr=subprocess.STDOUT, cwd=srcdir)
 
