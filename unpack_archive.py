@@ -2,6 +2,7 @@ import os
 import shutil
 import re
 import logging
+import traceback
 import zipfile
 import tempfile
 import subprocess
@@ -135,7 +136,12 @@ def unpack_archive(arcname: str, outdir: str):
             copy_without_symlink(tmpdir, outdir)
 
         elif ftype.strip().startswith('RPM '):
-            check_call("rpm2cpio '%(arcname)s' | cpio -idmv" % locals(), tmpdir)
+            try:
+                check_call("rpm2cpio '%(arcname)s' | cpio -idmv" % locals(), tmpdir)
+            except subprocess.CalledProcessError as e:
+                logger.warning("extract RPM '%s' failed %s" % (arcname, e))
+                logger.warning(traceback.format_exc())
+                raise NotSupportedFileType("Failed to extract RPM '%s'" % arcname)
             copy_without_symlink(tmpdir, outdir)
         elif 'Debian binary package' in ftype:
             check_call(["dpkg", "-x", arcname, tmpdir])

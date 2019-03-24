@@ -139,6 +139,7 @@ def main():
                     logger.warning('NotSupportedFileType: %s' % local_file)
                     chown_to_me(ext_dir)
                     shutil.rmtree(ext_dir)
+                    step = 'end'
                     continue
                 os.remove(local_file)
 
