@@ -207,7 +207,7 @@ def unpack_archive(arcname: str, outdir: str):
                 raise NotSupportedFileType(ftype)
     except PermissionError as e:
         try:
-            subprcess.check_call('chmod -R a+wrx ' + abspath(tmpdir))
+            subprcess.check_call('chmod -R a+wrx ' + abspath(tmpdir), shell=True)
         except subprocess.SubprocessError as e2:
             logger.warnning('failed to chmod -R a+wrx ' + abspath(tmpdir))
         logger.warning(str(e))
