@@ -48,9 +48,9 @@ def detect_filetype(filepath: str) -> str:
 
 def chown_to_me(pathdir: str):
     import pwd, grp, os, subprocess
-    subprocess.check_call('chown -R %s:%s %s' % 
+    subprocess.check_call('chown -R %s:%s %s' %
             (grp.getgrgid(os.getgid())[0], pwd.getpwuid(os.getuid())[0], pathdir),
-            shell=True)  
+            shell=True)
 
 
 def copy_without_symlink(srcdir: str, dstdir: str):
@@ -207,9 +207,10 @@ def unpack_archive(arcname: str, outdir: str):
                 raise NotSupportedFileType(ftype)
     except PermissionError as e:
         try:
-            subprcess.check_call('chmod -R a+wrx ' + abspath(tmpdir), shell=True)
+            subprocess.check_call('chmod -R a+wrx ' + abspath(tmpdir), shell=True)
+            shutil.rmtree(tmpdir)
         except subprocess.SubprocessError as e2:
-            logger.warnning('failed to chmod -R a+wrx ' + abspath(tmpdir))
+            logger.warnning('failed to chmod -R a+wrx %s %s' % (abspath(tmpdir), e2))
         logger.warning(str(e))
         logger.warning(traceback.format_exc())
         logger.warning('failed to remove tmpdir= ' + abspath(tmpdir))
