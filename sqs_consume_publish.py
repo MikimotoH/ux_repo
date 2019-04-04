@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf8 -*-
 import os
 from os.path import join as pjoin
 from os.path import abspath
@@ -145,7 +147,7 @@ def main():
 
             if step in ['getDirSize', 'unpack_archive']:
                 step = 'getDirSize'
-                proc = subprocess.Popen("du '%s' -sb" % ext_dir, shell=True, stdout=subprocess.PIPE,
+                proc = subprocess.Popen("du %s -sb" % ext_dir, shell=True, stdout=subprocess.PIPE,
                                         universal_newlines=True, bufsize=1)
                 du_str, _ = proc.communicate()
                 ext_total_bytes = int(du_str.split()[0])

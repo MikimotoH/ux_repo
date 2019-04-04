@@ -47,24 +47,27 @@ def detect_filetype(filepath: str) -> str:
 
 
 def chown_to_me(pathdir: str):
-    import pwd, grp, os, subprocess
-    subprocess.check_call('chown -R %s:%s %s' %
-                          (grp.getgrgid(os.getgid())[0], pwd.getpwuid(os.getuid())[0], pathdir),
-                          shell=True)
+    import pwd, grp
+    myname = pwd.getpwuid(os.getuid())[0]
+    mygroup = grp.getgrgid(os.getgid())[0]
+    subprocess.check_call('sudo chown -R %(mygroup)s:%(myname)s %(pathdir)s' % locals(),
+            shell=True)
+    subprocess.check_call('sudo chmod a+wrx -R %(pathdir)s' % locals(), 
+            shell=True)
 
 
 def copy_without_symlink(srcdir: str, dstdir: str):
     chown_to_me(srcdir)
-    subprocess.check_call('chmod a+r -R %s' % srcdir, shell=True)
-    subprocess.check_call("find . -type f | cpio -pamVd %(dstdir)s" % locals(),
-                          shell=True, stdout=DEVNULL, stderr=subprocess.STDOUT, cwd=srcdir)
+    subprocess.check_call("find . -type f | sudo cpio -pamVd '%s'" % abspath(dstdir),
+            shell=True, cwd=srcdir)
+    chown_to_me(abspath(dstdir))
 
 
 def check_call(cmd, cwd=None):
     if type(cmd) is list:
         subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
     else:
-        subprocess.check_call(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT, cwd=cwd)
 
 
 def unpack_archive(arcname: str, outdir: str):
@@ -109,7 +112,9 @@ def unpack_archive(arcname: str, outdir: str):
 
             elif ftype.strip().startswith('RPM '):
                 try:
-                    check_call("rpm2cpio '%(arcname)s' | cpio -idmv" % locals(), tmpdir)
+                    subprocess.check_call("rpm2cpio %s | sudo cpio -idmv" % abspath(arcname),
+                            shell=True, cwd=tmpdir)
+                    chown_to_me(tmpdir)
                 except subprocess.CalledProcessError as e:
                     logger.warning("extract RPM '%s' failed %s" % (arcname, e))
                     logger.warning(traceback.format_exc())
@@ -197,7 +202,7 @@ def unpack_archive(arcname: str, outdir: str):
                 except subprocess.CalledProcessError:
                     logger.info('End-of-central-directory signature not found: %s' % arcname)
                     try:
-                        check_call(["jar", "xvf", arcname], tmpdir)
+                        check_call(["jar", "xvf", abspath(arcname)], tmpdir)
                     except BaseException as ex:
                         logger.warning('Zip file "%s" decompress failed: %s' % (arcname, ex))
                 copy_without_symlink(tmpdir, outdir)
@@ -207,13 +212,13 @@ def unpack_archive(arcname: str, outdir: str):
                 raise NotSupportedFileType(ftype)
     except PermissionError as e:
         try:
-            subprocess.check_call('chmod -R a+wrx ' + abspath(tmpdir), shell=True)
+            chown_to_me(tmpdir)
             shutil.rmtree(tmpdir)
         except subprocess.SubprocessError as e2:
-            logger.warning('failed to chmod -R a+wrx %s %s' % (abspath(tmpdir), e2))
+            logger.warning('failed to chown_to_me %s %s' % (tmpdir, e2))
         logger.warning(str(e))
         logger.warning(traceback.format_exc())
-        logger.warning('failed to remove tmpdir= ' + abspath(tmpdir))
+        logger.warning('failed to remove tmpdir= ' + tmpdir)
 
     if not already_yielded:
         for root, _, files in os.walk(outdir):
