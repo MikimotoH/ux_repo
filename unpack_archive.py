@@ -58,7 +58,7 @@ def chown_to_me(pathdir: str):
 
 def copy_without_symlink(srcdir: str, dstdir: str):
     chown_to_me(srcdir)
-    subprocess.check_call("find . -type f | sudo cpio -pamVd '%s'" % abspath(dstdir),
+    subprocess.check_call("find . -type f | sudo cpio -pamd '%s'" % abspath(dstdir),
             shell=True, cwd=srcdir, stdout=DEVNULL, stderr=DEVNULL)
     chown_to_me(dstdir)
 
@@ -114,7 +114,7 @@ def unpack_archive(arcname: str, outdir: str):
 
             elif ftype.strip().startswith('RPM '):
                 try:
-                    subprocess.check_call("rpm2cpio %s | sudo cpio -idmv" % abspath(arcname),
+                    subprocess.check_call("rpm2cpio %s | sudo cpio -idm" % abspath(arcname),
                             shell=True, cwd=tmpdir, stdout=DEVNULL, stderr=DEVNULL)
                     chown_to_me(tmpdir)
                 except subprocess.CalledProcessError as e:
