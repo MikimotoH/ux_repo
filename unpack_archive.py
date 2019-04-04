@@ -59,15 +59,17 @@ def chown_to_me(pathdir: str):
 def copy_without_symlink(srcdir: str, dstdir: str):
     chown_to_me(srcdir)
     subprocess.check_call("find . -type f | sudo cpio -pamVd '%s'" % abspath(dstdir),
-            shell=True, cwd=srcdir)
-    chown_to_me(abspath(dstdir))
+            shell=True, cwd=srcdir, stdout=DEVNULL, stderr=DEVNULL)
+    chown_to_me(dstdir)
 
 
 def check_call(cmd, cwd=None):
     if type(cmd) is list:
-        subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL, cwd=cwd)
+        subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL,
+                cwd=cwd)
     else:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT, cwd=cwd)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL,
+                stderr=DEVNULL, cwd=cwd)
 
 
 def unpack_archive(arcname: str, outdir: str):
@@ -113,7 +115,7 @@ def unpack_archive(arcname: str, outdir: str):
             elif ftype.strip().startswith('RPM '):
                 try:
                     subprocess.check_call("rpm2cpio %s | sudo cpio -idmv" % abspath(arcname),
-                            shell=True, cwd=tmpdir)
+                            shell=True, cwd=tmpdir, stdout=DEVNULL, stderr=DEVNULL)
                     chown_to_me(tmpdir)
                 except subprocess.CalledProcessError as e:
                     logger.warning("extract RPM '%s' failed %s" % (arcname, e))
