@@ -9,8 +9,6 @@ import logging
 import traceback
 import shutil
 import subprocess
-import pwd
-import grp
 from pprint import pformat
 import boto3
 from botocore.exceptions import ClientError
@@ -138,11 +136,16 @@ def main():
                     os.makedirs(ext_dir, exist_ok=True)
                     children = [pjoin(ext_dir, f) for f, _ in unpack_archive(abspath(local_file), abspath(ext_dir))]
                 except NotSupportedFileType:
-                    logger.warning('NotSupportedFileType: %s' % local_file)
-                    chown_to_me(ext_dir)
-                    shutil.rmtree(ext_dir)
-                    step = 'end'
-                    continue
+                    if 'ASCII text' in e.ftype or 'XML document text' in e.ftype \
+                            or 'PGP signature' in e.ftype or 'JPEG image' in e.ftype \
+                            or 'PNG image' in e.ftype:
+                        children = [local_file]
+                    else:
+                        logger.warning('NotSupportedFileType: %s' % local_file)
+                        chown_to_me(ext_dir)
+                        shutil.rmtree(ext_dir)
+                        step = 'end'
+                        continue
                 os.remove(local_file)
 
             if step in ['getDirSize', 'unpack_archive']:
