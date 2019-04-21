@@ -138,7 +138,8 @@ def main():
                 except NotSupportedFileType:
                     if 'ASCII text' in e.ftype or 'XML document text' in e.ftype \
                             or 'PGP signature' in e.ftype or 'JPEG image' in e.ftype \
-                            or 'PNG image' in e.ftype:
+                            or 'PNG image' in e.ftype  \
+                            or 'x86 boot sector' in e.ftype:
                         children = [local_file]
                     else:
                         logger.warning('NotSupportedFileType: %s' % local_file)
