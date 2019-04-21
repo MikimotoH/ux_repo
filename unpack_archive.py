@@ -150,6 +150,19 @@ def unpack_archive(arcname: str, outdir: str):
                         yield from gunzip_like_proc('.xz', ["xz", "-d"])
                     else:
                         copy_without_symlink(tmpdir, outdir)
+            elif 'LZMA compressed data, streamed' in ftype:
+                os.rename(arcname, arcname + '.lzma')
+                try:
+                    subprocess.check_call(
+                            "unlzma --stdout %s|cpio -idm " % abspath(arcname+'.lzma'),
+                            shell=True, cwd=tmpdir)
+                except subprocess.CalledProcessError as e:
+                    logger.warning("extract lzma '%s' failed %s" % (arcname+'.lzma', e))
+                    logger.warning(traceback.format_exc())
+                    raise NotSupportedFileType("Failed to extract RPM '%s'" % arcname)
+                os.rename(arcname + '.lzma', arcname)
+                chown_to_me(tmpdir)
+                copy_without_symlink(tmpdir, outdir)
             elif 'ARJ archive data' in ftype:
                 if splitext(arcname)[1] != '.arj':
                     tmpfile = pjoin(tmpdir, basename(arcname)) + '.arj'

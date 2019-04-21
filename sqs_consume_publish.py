@@ -164,7 +164,11 @@ def main():
                     logger.info('prepared to upload %s files' % len(children))
                     with tqdm(total=ext_total_bytes, unit='B', unit_scale=True, desc='upload', ncols=100, leave=False) as t:
                         for f in children:
-                            child_key = '_extracted/' + guen_keyname(getSha256(f))
+                            try:
+                                child_key = '_extracted/' + guen_keyname(getSha256(f))
+                            except FileNotFoundError:
+                                logger.info('File not found: ' + f)
+                                continue
                             try:
                                 logger.debug('upload child "%s" to s3://%s/%s"' % (f, bucket, child_key))
                                 fileSize = os.path.getsize(f)
