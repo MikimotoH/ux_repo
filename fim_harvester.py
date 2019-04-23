@@ -3,7 +3,9 @@
 import re
 import os
 import urllib
+import time
 import logging
+import traceback
 import sys
 from pprint import pformat
 from pyquery import PyQuery as pq
@@ -24,25 +26,11 @@ def repo_to_regex(repo: str) -> str:
 
 
 def recursion(url: str) -> str:
-    import time
-    for try_count in range(100):
-        try:
-            d = pq(url=url)
-            break
-        except Exception as ex:
-            logger.info('try_count=%s, for url=%s' % (try_count, url))
-            if try_count == 99:
-                logger.warning(ex)
-                logger.warning('Failed to visit %s' % url)
-                return
-            time.sleep(0.1)
+    d = pq(url=url)
 
-    try:
-        items = d('table:nth-child(6) tr td a')
-    except Exception as ex:
-        logger.warning(pformat(ex))
-        logger.warning('no CSS selector in pyquery d')
-        return
+    items = d('table:nth-child(6) tr td a')
+    if not items:
+        items = d('table:nth-child(13) tr td a')
     for item in items[1:]:
         if not item.text:
             continue
@@ -86,12 +74,12 @@ def download_file(f_url: str):
 visited_repos = []
 
 
-def harvest_csv_file(csv_file: str):
+def harvest_csv_file(csv_file:str):
     with open(csv_file, 'r') as f:
         for l in f:
             l = l.strip()
             l = l.split(',')[0]
-            if not l or not re.match(r'http://|http://', l):
+            if not l or not re.match(r'http://|https://', l):
                 continue
             repo = l
             logger.info('repo=%s' % repo)
@@ -108,12 +96,20 @@ def harvest_csv_file(csv_file: str):
 
 
 def main():
-    logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s %(message)s",
-            stream=sys.stdout, level=logging.INFO)
-    os.makedirs(dl_dir, exist_ok=True)
-    harvest_csv_file('fim_linux_repository.csv')
-    harvest_csv_file('list of repositories.csv')
+    try:
+        logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s %(message)s",
+                stream=sys.stdout, level=logging.INFO)
+        os.makedirs(dl_dir, exist_ok=True)
+        # download_file('http://debuginfo.centos.org/')
+        harvest_csv_file('fim_linux_repository.csv')
+        harvest_csv_file('list of repositories.csv')
+    except KeyboardInterrupt:
+        return
+    except Exception as e:
+        logger.warning(pformat(e))
+        traceback.print_exc()
 
 
 if __name__ == '__main__':
     main()
+
