@@ -159,7 +159,7 @@ def unpack_archive(arcname: str, outdir: str):
                 except subprocess.CalledProcessError as e:
                     logger.warning("extract lzma '%s' failed %s" % (arcname+'.lzma', e))
                     logger.warning(traceback.format_exc())
-                    raise NotSupportedFileType("Failed to extract RPM '%s'" % arcname)
+                    raise NotSupportedFileType("Failed to unlzma: " + arcname)
                 os.rename(arcname + '.lzma', arcname)
                 chown_to_me(tmpdir)
                 copy_without_symlink(tmpdir, outdir)
@@ -223,6 +223,16 @@ def unpack_archive(arcname: str, outdir: str):
                 copy_without_symlink(tmpdir, outdir)
             elif 'Jar' in ftype:
                 shutil.copy(arcname, pjoin(outdir, basename(arcname) + '.jar'))
+            elif 'Squashfs filesystem' in ftype:
+                try:
+                    subprocess.check_call("sudo unsquashfs %s" % abspath(arcname),
+                            shell=True, cwd=tmpdir)
+                except subprocess.CalledProcessError as e:
+                    logger.warning("unsquashfs failed: " + arcname)
+                    logger.warning(traceback.format_exc())
+                    raise NotSupportedFileType("unsquashfs failed :" + arcname)
+                chown_to_me(tmpdir)
+                copy_without_symlink(tmpdir, outdir)
             else:
                 raise NotSupportedFileType(ftype)
     except PermissionError as e:

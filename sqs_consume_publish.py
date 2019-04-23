@@ -135,7 +135,7 @@ def main():
                 try:
                     os.makedirs(ext_dir, exist_ok=True)
                     children = [pjoin(ext_dir, f) for f, _ in unpack_archive(abspath(local_file), abspath(ext_dir))]
-                except NotSupportedFileType:
+                except NotSupportedFileType as e:
                     if 'ASCII text' in e.ftype or 'XML document text' in e.ftype \
                             or 'PGP signature' in e.ftype or 'JPEG image' in e.ftype \
                             or 'PNG image' in e.ftype  \
