@@ -1,5 +1,6 @@
 Domain,Linux,Accessible,Download,
 ,,,HTTP,FTP
+http://debuginfo.centos.org/
 http://mirror.centos.org/centos/$releasever/os/$basearch/,CentOS,Yes,No,Yes
 http://mirror.centos.org/centos/$releasever/updates/$basearch/,CentOS,Yes,No,Yes
 http://mirror.centos.org/centos/$releasever/extras/$basearch/,CentOS,Yes,No,Yes
