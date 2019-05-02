@@ -128,6 +128,10 @@ def main():
                     else:
                         logger.warning('Key "%s" exception %s' % (key, pformat(e.response)))
 
+            if not os.path.exists(local_file):
+                logger.info('File download error ' + local_file)
+                step = 'end'
+                continue
             if step in ['downloadFile', 'unpack_archive']:
                 if step == 'unpack_archive':
                     assert local_file
