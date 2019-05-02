@@ -28,6 +28,7 @@ queue, and upload extracted children files to the bucket/\_extracted folder.
       * lzop
       * lzip
       * openjdk-7-jdk
+      * squashfs-tools
 
 
 ## How to install Dependencies:
