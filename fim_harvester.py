@@ -18,7 +18,7 @@ from typing import Generator, List
 
 dl_dir = 'downloads'
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor()
+executor = ThreadPoolExecutor(os.cpu_count()*2)
 
 
 def repo_to_regex(repo: str) -> str:
