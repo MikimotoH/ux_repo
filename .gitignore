@@ -2,3 +2,4 @@ __pycache__
 ftp_credentials.py
 downloads
 .mypy_cache
+*.swp
