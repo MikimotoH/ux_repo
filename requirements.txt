@@ -1,2 +1,8 @@
+<<<<<<< HEAD
 boto3
 pyquery
+=======
+python-magic
+boto3
+humanfriendly
+>>>>>>> 9d66f9e1bbb2765efd6d527beb83464bd6f54f00
