@@ -1,4 +1,5 @@
 __pycache__
 ftp_credentials.py
+config.py
 downloads
 .mypy_cache
