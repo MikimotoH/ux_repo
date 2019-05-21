@@ -13,7 +13,6 @@ from urllib.parse import urlparse
 from pprint import pformat
 from pyquery import PyQuery as pq
 from boto3x import upload_file
-from typing import Generator, List
 
 
 dl_dir = 'downloads'
@@ -31,7 +30,7 @@ def repo_to_regex(repo: str) -> str:
     return r
 
 
-def recursion(url: str) -> Generator[str, None, str]:
+def recursion(url: str):
     try:
         logger.info('Visit ' + url)
         d = pq(url=url, verify=False)
@@ -85,7 +84,7 @@ def download_file(f_url: str) -> None:
         logger.warning(traceback.format_exc())
 
 
-visited_repos: List[str] = []
+visited_repos = []
 
 
 def harvest_csv_file(csv_file: str):
