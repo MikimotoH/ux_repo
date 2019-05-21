@@ -1,3 +1,14 @@
+<<<<<<< HEAD
 lxml
 pyquery
 boto3
+=======
+<<<<<<< HEAD
+boto3
+pyquery
+=======
+python-magic
+boto3
+humanfriendly
+>>>>>>> 9d66f9e1bbb2765efd6d527beb83464bd6f54f00
+>>>>>>> f9770b4d86402ce3f141023cfc402f4af51202cc
