@@ -1,10 +1,12 @@
 import os
+import sys
 import time
 
 
 def main():
     while True:
-        os.system('python3.6 fim_harvest.py')
+        my_dir = os.path.dirname(__file__)
+        os.system('%s %s' % (sys.executable, os.path.join(my_dir, 'fim_harvester.py')))
         time.sleep(600)
 
 
